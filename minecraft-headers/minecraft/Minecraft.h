@@ -3,10 +3,10 @@
 #include <memory>
 #include "MinecraftCommands.h"
 
-struct Level;
+class Minecraft {
+	
+public:
+	MCAPI class Level* getLevel() const;
 
-struct Minecraft {
-	Level *getLevel() const;
-
-	MinecraftCommands& getCommands();
+	MCAPI class MinecraftCommands& getCommands();
 };

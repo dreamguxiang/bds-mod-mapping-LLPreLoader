@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../Global.h"
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -8,19 +9,14 @@
 #include "Memory.h"
 #include "ItemTag.h"
 
-struct ItemRegistry{
-	static std::vector<SharedPtr<Item>> mItemRegistry;
+class ItemRegistry{
+public:
+	MCAPI static std::vector<class SharedPtr<class Item>> mItemRegistry;
 
 	struct ItemAlias{
 		HashedString alias;
 		char padding[120];
 	};
-
-	static std::unordered_map<HashedString, ItemAlias> mItemAliasLookupMap;
-	static std::unordered_map<HashedString, std::function<HashedString(short)>> mComplexAliasLookupMap;
-
-	static std::unordered_map<ItemTag, std::unordered_set<Item const *>> mTagToItemsMap;
-
-	static std::pair<HashedString, int> getNameFromAlias(HashedString const & name, int metadata);
+	MCAPI struct std::pair<class HashedString, int> getNameFromAlias(class HashedString const&, int) const;
 
 };

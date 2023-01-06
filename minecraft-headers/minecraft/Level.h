@@ -1,9 +1,12 @@
 #pragma once
+#include "../Global.h"
 
-struct BlockPalette;
-struct BiomeRegistry;
+class Level {
 
-struct Level {
-	BlockPalette *getBlockPalette() const;
-	BiomeRegistry *getBiomeRegistry() const;
+public:
+    MCVAPI class BlockPalette& getBlockPalette();
+    MCVAPI class BlockPalette const& getBlockPalette() const;
+    MCVAPI class BiomeRegistry& getBiomeRegistry();
+    MCVAPI class BiomeRegistry const& getBiomeRegistry() const;
+    
 };

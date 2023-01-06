@@ -12,7 +12,6 @@
 #include <minecraft/Memory.h>
 #include <minecraft/Minecraft.h>
 #include <minecraft/ParticleTypeMap.h>
-#include <minecraft/ServerInstance.h>
 #include <minecraft/VanillaBlockConversion.h>
 #include <minecraft/Biome.h>
 #include <minecraft/BiomeRegistry.h>
@@ -24,8 +23,8 @@
 #include <json.hpp>
 
 
-void generate_r12_to_current_block_map(ServerInstance *serverInstance) {
-	auto palette = serverInstance->getMinecraft()->getLevel()->getBlockPalette();
+void generate_r12_to_current_block_map(Minecraft* mc) {
+	auto palette = mc->getLevel()->getBlockPalette();
 
 	std::filesystem::path inputPath{"input_files/r12_block_states.json"};
 	if (!std::filesystem::exists(inputPath)) {
@@ -54,8 +53,8 @@ void generate_r12_to_current_block_map(ServerInstance *serverInstance) {
 				continue;
 			}
 
-			auto block = blockLegacy->getStateFromLegacyData(state);
-			if (block == nullptr) {
+			auto& block = blockLegacy->getStateFromLegacyData(state);
+			if (&block == nullptr) {
 				std::cerr << "No mapped state for " << name << ":" << std::to_string(state) << " (THIS IS A BUG)" << std::endl;
 				continue;
 			}
@@ -63,12 +62,12 @@ void generate_r12_to_current_block_map(ServerInstance *serverInstance) {
 			stream->writeUnsignedVarInt(name.length());
 			stream->write(name.c_str(), name.length());
 			stream->writeUnsignedShort(state);
-			stream->writeType(block->tag);
+			stream->writeCompoundTag(block.tag);
 		}
 	}
 
 	std::ofstream output("mapping_files/r12_to_current_block_map.bin");
-	output << stream->buffer;
+	output << *stream->mBuffer;
 	output.close();
 	delete stream;
 	std::cout << "Generated R12 block state mapping table" << std::endl;
@@ -80,8 +79,8 @@ static std::string slurp(std::ifstream& in) {
 	return sstr.str();
 }
 
-static void generate_old_to_current_palette_map(ServerInstance *serverInstance) {
-	auto palette = serverInstance->getMinecraft()->getLevel()->getBlockPalette();
+static void generate_old_to_current_palette_map(Minecraft* mc) {
+	auto palette = mc->getLevel()->getBlockPalette();
 
 	unsigned int generated = 0;
 
@@ -104,20 +103,20 @@ static void generate_old_to_current_palette_map(ServerInstance *serverInstance) 
 		auto input = new ReadOnlyBinaryStream(slurp(infile));
 		auto output = new BinaryStream();
 
-		auto length = input->buffer.length();
+		auto length = input->mBuffer->length();
+	
+		while(input->mReadPointer < length){
+			auto state = input->getCompoundTag();
 
-		while(input->offset < length){
-			CompoundTag state = input->getType<CompoundTag>();
-
-			const Block* block = palette->getBlock(state);
+			const Block& block = palette.getBlock(*state);
 
 			//TODO: compare and don't write if the states are the same
 			//right now it's easier to do this outside of the mod
-			output->writeType(state);
-			output->writeType(block->tag);
+			output->writeCompoundTag(*state);
+			output->writeCompoundTag(block.tag);
 		}
 
-		mapping_file << output->buffer;
+		mapping_file << *output->mBuffer;
 		mapping_file.close();
 		delete input;
 		delete output;
@@ -129,33 +128,32 @@ static void generate_old_to_current_palette_map(ServerInstance *serverInstance) 
 	std::cout << "Generated " << std::to_string(generated) << " block state mapping tables" << std::endl;
 }
 
-void generate_palette(ServerInstance *serverInstance) {
-	auto palette = serverInstance->getMinecraft()->getLevel()->getBlockPalette();
-	unsigned int numStates = palette->getNumBlockRuntimeIds();
+void generate_palette(Minecraft* mc) {
+	auto& palette =mc->getLevel()->getBlockPalette();
+	unsigned int numStates = palette.getNumBlockRuntimeIds();
 	std::cout << "Number of blockstates: " << numStates << std::endl;
 
-	auto paletteStream = new BinaryStream();
+	BinaryStream wp;
 	for (unsigned int i = 0; i < numStates; i++) {
-		auto state = palette->getBlock(i);
-		paletteStream->writeType(state->tag);
+		auto& state = palette.getBlock(i);
+		wp.writeCompoundTag(state.tag);
 	}
 
 	std::ofstream paletteOutput("mapping_files/canonical_block_states.nbt");
-	paletteOutput << paletteStream->buffer;
+	paletteOutput << *wp.mBuffer;
 	paletteOutput.close();
-	delete paletteStream;
 	std::cout << "Generated block palette" << std::endl;
 }
 
-static void generate_blockstate_meta_mapping(ServerInstance *serverInstance) {
-	auto palette = serverInstance->getMinecraft()->getLevel()->getBlockPalette();
-	unsigned int numStates = palette->getNumBlockRuntimeIds();
+static void generate_blockstate_meta_mapping(Minecraft* mc) {
+	auto& palette = mc->getLevel()->getBlockPalette();
+	unsigned int numStates = palette.getNumBlockRuntimeIds();
 
 	auto metaArray = nlohmann::json::array();
 
 	for(auto i = 0; i < numStates; i++){
-		auto state = palette->getBlock(i);
-		metaArray[i] = state->data;
+		auto& state = palette.getBlock(i);
+		metaArray[i] = state.data;
 	}
 
 	std::ofstream out("mapping_files/block_state_meta_map.json");
@@ -165,9 +163,9 @@ static void generate_blockstate_meta_mapping(ServerInstance *serverInstance) {
 }
 
 
-static void generate_block_properties_table(ServerInstance *serverInstance) {
-	auto palette = serverInstance->getMinecraft()->getLevel()->getBlockPalette();
-	unsigned int numStates = palette->getNumBlockRuntimeIds();
+static void generate_block_properties_table(Minecraft* mc) {
+	auto& palette = mc->getLevel()->getBlockPalette();
+	unsigned int numStates = palette.getNumBlockRuntimeIds();
 
 	auto table = nlohmann::json::object();
 
@@ -192,12 +190,12 @@ static void generate_block_properties_table(ServerInstance *serverInstance) {
 	std::cout << "Generated hardness table" << std::endl;
 }
 
-void generate_biome_mapping(ServerInstance *server) {
-	auto registry = server->getMinecraft()->getLevel()->getBiomeRegistry();
+void generate_biome_mapping(Minecraft* mc) {
+	auto& registry = mc->getLevel()->getBiomeRegistry();
 
 	auto map = nlohmann::json::object();
 
-	registry->forEachBiome([&map] (Biome &biome) {
+	registry.forEachBiome([&map] (Biome &biome) {
 		auto id = biome.biomeId;
 		map[biome.name.str] = id;
 	});
@@ -256,8 +254,8 @@ static std::string add_prefix_if_necessary(std::string input) {
 
 static void generate_item_alias_mapping() {
 	auto simple = nlohmann::json::object();
-
-	for(auto pair : ItemRegistry::mItemAliasLookupMap) {
+	auto& map1 = *(std::unordered_map<HashedString, ItemRegistry::ItemAlias>*)dlsym("?mItemAliasLookupMap@ItemRegistry@@0V?$unordered_map@VHashedString@@UItemAlias@ItemRegistry@@U?$hash@VHashedString@@@std@@U?$equal_to@VHashedString@@@5@V?$allocator@U?$pair@$$CBVHashedString@@UItemAlias@ItemRegistry@@@std@@@5@@std@@A");
+	for(auto& pair : map1) {
 		auto prefixed = add_prefix_if_necessary(pair.second.alias.str);
 		if (prefixed != pair.first.str) {
 			simple[pair.first.str] = prefixed;
@@ -265,12 +263,11 @@ static void generate_item_alias_mapping() {
 	}
 
 	auto complex = nlohmann::json::object();
-
-	for(auto pair : ItemRegistry::mComplexAliasLookupMap) {
+	auto& map2 = *(std::unordered_map<HashedString, std::function<HashedString(short)>>*)dlsym("?mComplexAliasLookupMap@ItemRegistry@@0V?$unordered_map@VHashedString@@V?$function@$$A6A?AVHashedString@@F@Z@std@@U?$hash@VHashedString@@@3@U?$equal_to@VHashedString@@@3@V?$allocator@U?$pair@$$CBVHashedString@@V?$function@$$A6A?AVHashedString@@F@Z@std@@@std@@@3@@std@@A");
+	for(auto& pair : map2) {
 		auto metaMap = nlohmann::json::object();
-
 		auto func = pair.second;
-
+		
 		auto zero = func(0).str;
 		for(short i = 0; i < 32767; i++){
 			auto iStr = func(i).str;
@@ -295,22 +292,22 @@ static void generate_item_alias_mapping() {
 	std::cout << "Generated legacy item alias mapping table" << std::endl;
 }
 
-static void generate_block_id_to_item_id_map(ServerInstance *serverInstance) {
+static void generate_block_id_to_item_id_map(Minecraft* mc) {
 	auto map = nlohmann::json::object();
-	auto palette = serverInstance->getMinecraft()->getLevel()->getBlockPalette();
-	unsigned int numStates = palette->getNumBlockRuntimeIds();
+	auto& palette = mc->getLevel()->getBlockPalette();
+	unsigned int numStates = palette.getNumBlockRuntimeIds();
 
 	for (unsigned int i = 0; i < numStates; i++) {
-		auto state = palette->getBlock(i);
-		auto descriptor = new ItemDescriptor(*state);
+		auto& state = palette.getBlock(i);
+		auto descriptor = new ItemDescriptor(state);
 
 		const Item *item = descriptor->getItem();
 		delete descriptor;
 		if (item == nullptr) {
-			std::cout << "null item ??? " << state->getLegacyBlock().getFullName() << std::endl;
+			std::cout << "null item ??? " << state.getLegacyBlock().getFullName() << std::endl;
 			continue;
 		}
-		std::string blockName = state->getLegacyBlock().getFullName();
+		std::string blockName = state.getLegacyBlock().getFullName();
 		std::string itemName = item->getFullItemName();
 		map[blockName] = itemName;
 	}
@@ -322,10 +319,10 @@ static void generate_block_id_to_item_id_map(ServerInstance *serverInstance) {
 	std::cout << "Generated BlockID to ItemID mapping table" << std::endl;
 }
 
-static void generate_command_arg_types_table(ServerInstance *serverInstance) {
+static void generate_command_arg_types_table(Minecraft* mc) {
 	auto map = nlohmann::json::object();
 
-	auto registry = serverInstance->getMinecraft()->getCommands().getRegistry();
+	auto& registry = mc->getCommands().getRegistry();
 
 	for (int i = 0; i < 1000; i++) { //TODO: we can probably use CommandRegistry::forEachSymbol() for this instead
 		int symbol = i | 0x100000;
@@ -351,7 +348,9 @@ static void generate_command_arg_types_table(ServerInstance *serverInstance) {
 
 static void generate_item_tags() {
 	auto tags = nlohmann::json::object();
-	for (const auto &pair: ItemRegistry::mTagToItemsMap) {
+	auto& map= *(std::unordered_map<ItemTag, std::unordered_set<Item const*>>*)dlsym("?mTagToItemsMap@ItemRegistry@@0V?$unordered_map@UItemTag@@V?$unordered_set@PEBVItem@@U?$hash@PEBVItem@@@std@@U?$equal_to@PEBVItem@@@3@V?$allocator@PEBVItem@@@3@@std@@U?$hash@UItemTag@@@3@U?$equal_to@UItemTag@@@3@V?$allocator@U?$pair@$$CBUItemTag@@V?$unordered_set@PEBVItem@@U?$hash@PEBVItem@@@std@@U?$equal_to@PEBVItem@@@3@V?$allocator@PEBVItem@@@3@@std@@@std@@@3@@std@@A");
+
+	for (const auto &pair: map) {
 		auto items = nlohmann::json::array();
 		for (const auto &item: pair.second) {
 			items.push_back(item->getFullItemName());
@@ -366,21 +365,35 @@ static void generate_item_tags() {
 	std::cout << "Generated item tags!" << std::endl;
 }
 
-extern "C" void modloader_on_server_start(ServerInstance *serverInstance) {
+
+Minecraft* GlobalMinecraft;
+void modloader_on_server_start(Minecraft *mc) {
+	
 	std::filesystem::create_directory("mapping_files");
-	generate_r12_to_current_block_map(serverInstance);
-	generate_palette(serverInstance);
-	generate_blockstate_meta_mapping(serverInstance);
-	generate_biome_mapping(serverInstance);
+	generate_r12_to_current_block_map(mc);
+	generate_palette(mc);
+	generate_blockstate_meta_mapping(mc);
+	generate_biome_mapping(mc);
 	generate_level_sound_mapping();
 	generate_particle_mapping();
-	generate_block_properties_table(serverInstance);
+	generate_block_properties_table(mc);
 
-	generate_old_to_current_palette_map(serverInstance);
+	generate_old_to_current_palette_map(mc);
 
 	generate_item_alias_mapping();
 	generate_item_tags();
 
-	generate_block_id_to_item_id_map(serverInstance);
-	generate_command_arg_types_table(serverInstance);
+	generate_block_id_to_item_id_map(mc);
+	generate_command_arg_types_table(mc);
+}
+
+TInstanceHook(void, "?initAsDedicatedServer@Minecraft@@QEAAXXZ", Minecraft) {
+	GlobalMinecraft = this;
+	original(this);
+}
+
+
+THook(void, "?fireServerStarted@MinecraftEventing@@UEAAXW4ServerType@IMinecraftEventing@@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z", void* a1, void* a2, void* a3) {
+	modloader_on_server_start(GlobalMinecraft);
+	return original(a1, a2, a3);
 }

@@ -1,16 +1,13 @@
 #pragma once
-
+#include "../Global.h"
 #include "BlockLegacy.h"
 #include "CompoundTag.h"
 
-typedef CompoundTag BlockSerializationId;
+class Block {
+public:
+	MCAPI class BlockLegacy const& getLegacyBlock() const;
 
-struct Block {
-	const BlockLegacy & getLegacyBlock() const {
-		return *blockLegacy;
-	}
-
-	float getDestroySpeed() const;
+	MCAPI float getDestroySpeed() const;
 
 	virtual ~Block() {}
 
@@ -18,5 +15,7 @@ struct Block {
 	BlockLegacy* blockLegacy;
 
 	char filler2[128];
-	BlockSerializationId tag;
+	CompoundTag tag;//152
 };
+
+static_assert(offsetof(Block, tag) == 152);

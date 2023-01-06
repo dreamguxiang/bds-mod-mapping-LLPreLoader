@@ -33,7 +33,8 @@ struct SharedCounter {
 };
 
 template<typename T>
-struct WeakPtr {
+class WeakPtr {
+public:
     SharedCounter<T>* counter = nullptr;
 
     WeakPtr(T* val = nullptr) {
@@ -99,7 +100,8 @@ struct WeakPtr {
 };
 
 template<typename T>
-struct SharedPtr {
+class SharedPtr {
+public:
     SharedCounter<T>* counter = nullptr;
 
     SharedPtr(T* val = nullptr) {

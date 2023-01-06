@@ -1,3 +1,5 @@
 .idea/*
 build/*
 cmake-build-debug/*
+lib/bedrock_server_api.lib
+lib/bedrock_server_var.lib

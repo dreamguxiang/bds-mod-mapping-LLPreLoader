@@ -1,10 +1,11 @@
 #pragma once
-
+#include "../Global.h"
 #include <string>
 
-struct Item {
+class Item {
+public:
 	char padding[552];
 
 //	virtual ~Item() {}
-	const std::string & getFullItemName(void) const;
+	MCAPI std::string const& getFullItemName() const;
 };

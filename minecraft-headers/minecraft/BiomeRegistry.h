@@ -3,8 +3,9 @@
 #include <functional>
 #include "Biome.h"
 
-struct BiomeRegistry {
-	Biome* lookupById(int) const;
+class BiomeRegistry {
+public:
+	MCAPI class Biome* lookupById(int) const;
 
-	void forEachBiome(std::function<void(Biome &)>) const;
+	MCAPI void forEachBiome(class std::function<void(class Biome&)>) const;
 };

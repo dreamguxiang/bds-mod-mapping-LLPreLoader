@@ -1,20 +1,25 @@
 #pragma once
 
-struct CommandRegistry{
-	struct Symbol{
-		int value;
+class CommandRegistry{
+public:
+	class Symbol{
+	public:
+		int val;
 
 
-		Symbol(int value) : value(value) {}
+		Symbol(int value) : val(value) {}
 
-		Symbol(void);
-		Symbol(size_t);
-		Symbol(const CommandRegistry::Symbol &);
-		CommandRegistry::Symbol & operator=(const CommandRegistry::Symbol &);
+		MCAPI Symbol(unsigned __int64 = -1);
+		MCAPI Symbol(class Symbol const&);
+		MCAPI unsigned __int64 toIndex() const;
+		MCAPI int value() const;
+		inline bool operator==(Symbol const& right) const {
+			return val == right.val;
+		}
 	};
 
-	std::string describe(CommandRegistry::Symbol) const;
-	std::string symbolToString(CommandRegistry::Symbol) const;
-	bool isValid(CommandRegistry::Symbol) const;
+	MCAPI std::string describe(class CommandRegistry::Symbol) const;
+	MCAPI std::string symbolToString(class CommandRegistry::Symbol) const;
+	MCAPI bool isValid(class CommandRegistry::Symbol) const;
 
 };

@@ -6,6 +6,6 @@
 #include "BlockLegacy.h"
 
 namespace VanillaBlockConversion {
-	int getBlockTypeLegacyIdFromName(std::string const&);
-	Block* tryGetLegacyState(unsigned int, unsigned int);
+	__declspec(dllimport) int getBlockTypeLegacyIdFromName(std::string const&);
+	__declspec(dllimport) Block* tryGetLegacyState(unsigned int, unsigned int);
 };

@@ -2,7 +2,8 @@
 
 #include "HashedString.h"
 
-struct Biome {
+class Biome {
+public:
 	HashedString name;
 	char filler[80];
 	unsigned int biomeId;

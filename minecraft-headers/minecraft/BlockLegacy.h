@@ -3,14 +3,10 @@
 #include "HashedString.h"
 
 struct Block;
+#include "../Global.h"
 
-struct NewBlockID {
-	NewBlockID(const NewBlockID&);
-
-	unsigned short value;
-};
-
-struct BlockLegacy {
+class BlockLegacy {
+public:
 
 	std::string descriptionId;
 	HashedString baseName;
@@ -28,17 +24,20 @@ struct BlockLegacy {
 	float blastResistance;
 	char padding2[16];
 	float friction;
-
-	Block *getStateFromLegacyData(unsigned short) const;
-	const NewBlockID getBlockID() const;
+	MCAPI short getBlockItemId() const;
+	
+	const short getBlockID() const {
+		return getBlockItemId();
+	}
 
 	std::string getFullName() const {
 		return fullName.str;
 	}
 
-	float getDestroySpeed() const;
+	MCAPI float getDestroySpeed() const;
 
 	virtual ~BlockLegacy();
+	virtual class Block const& getStateFromLegacyData(unsigned short) const;
 
 };
 

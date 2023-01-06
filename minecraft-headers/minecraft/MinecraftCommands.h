@@ -2,6 +2,7 @@
 
 #include "CommandRegistry.h"
 
-struct MinecraftCommands{
-	CommandRegistry& getRegistry();
+class MinecraftCommands{
+public:
+    MCAPI class CommandRegistry& getRegistry();
 };

@@ -2,11 +2,23 @@
 #include <vector>
 
 enum class ParticleType;
+template <typename T, typename T2>
 
-struct ParticleTypeMap{
-	static std::string& getParticleName(ParticleType type);
+class BidirectionalUnorderedMap {
+public:
+    std::unordered_map<T, T2> mMap1;
+    std::unordered_map<T2, T> mMap2;
+};
 
-	static std::vector<std::pair<std::string, ParticleType>> getParticleNameTypeList(void);
 
-	static ParticleType getParticleTypeId(std::string& name);
+class ParticleTypeMap{
+public:
+	MCAPI static std::string const& getParticleName(enum class ParticleType);
+    static std::unordered_map<std::string, ParticleType> getParticleNameTypeList(void) {
+        return map.mMap2;
+    }
+
+	MCAPI static enum class ParticleType getParticleTypeId(std::string const&);
+private:
+    MCAPI static class BidirectionalUnorderedMap<enum class ParticleType, std::string> const map;
 };

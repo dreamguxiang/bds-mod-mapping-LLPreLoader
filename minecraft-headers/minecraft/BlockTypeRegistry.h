@@ -4,7 +4,9 @@
 #include "HashedString.h"
 #include "Memory.h"
 
-struct BlockTypeRegistry{
-	static void forEachBlock(std::function<bool (const BlockLegacy &)>);
-	static WeakPtr<BlockLegacy> lookupByName(const HashedString &, bool);
+class BlockTypeRegistry{
+public:
+	MCAPI static void forEachBlock(class std::function<bool(class BlockLegacy const&)>);
+
+	MCAPI static class WeakPtr<class BlockLegacy> lookupByName(class HashedString const&, bool);
 };
