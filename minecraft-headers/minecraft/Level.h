@@ -8,5 +8,5 @@ public:
     MCVAPI class BlockPalette const& getBlockPalette() const;
     MCVAPI class BiomeRegistry& getBiomeRegistry();
     MCVAPI class BiomeRegistry const& getBiomeRegistry() const;
-    
+    MCVAPI class ItemRegistryRef getItemRegistry() const;
 };

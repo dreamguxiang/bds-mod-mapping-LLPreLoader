@@ -14,8 +14,8 @@ public:
 	unsigned short data;
 	BlockLegacy* blockLegacy;
 
-	char filler2[128];
-	CompoundTag tag;//152
+	char filler2[132];
+	CompoundTag tag;//160
 };
 
-static_assert(offsetof(Block, tag) == 152);
+static_assert(offsetof(Block, tag) == 160);

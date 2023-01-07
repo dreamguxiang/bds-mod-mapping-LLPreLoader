@@ -4,7 +4,7 @@
 
 class Item {
 public:
-	char padding[552];
+	char padding[576];
 
 //	virtual ~Item() {}
 	MCAPI std::string const& getFullItemName() const;

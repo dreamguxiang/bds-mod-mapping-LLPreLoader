@@ -10,6 +10,7 @@ class ItemDescriptor {
 		void *impl;
 
 	public:
+		
 		MCAPI ItemDescriptor();
 		MCAPI ItemDescriptor(class Item const&, int);
 		MCAPI ItemDescriptor(class BlockLegacy const&);

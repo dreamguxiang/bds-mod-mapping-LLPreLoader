@@ -15,6 +15,7 @@
 #include <minecraft/VanillaBlockConversion.h>
 #include <minecraft/Biome.h>
 #include <minecraft/BiomeRegistry.h>
+#include <minecraft/ItemRegistryManager.h>
 
 #include <filesystem>
 #include <fstream>
@@ -252,9 +253,11 @@ static std::string add_prefix_if_necessary(std::string input) {
 	return "minecraft:" + input;
 }
 
-static void generate_item_alias_mapping() {
+static void generate_item_alias_mapping(Minecraft* mc) {
+	auto itemreg = mc->getLevel()->getItemRegistry()._lockRegistry().get();
 	auto simple = nlohmann::json::object();
-	auto& map1 = *(std::unordered_map<HashedString, ItemRegistry::ItemAlias>*)dlsym("?mItemAliasLookupMap@ItemRegistry@@0V?$unordered_map@VHashedString@@UItemAlias@ItemRegistry@@U?$hash@VHashedString@@@std@@U?$equal_to@VHashedString@@@5@V?$allocator@U?$pair@$$CBVHashedString@@UItemAlias@ItemRegistry@@@std@@@5@@std@@A");
+	//ItemRegistry::registerAlias
+	auto& map1 = *(std::unordered_map<HashedString, ItemRegistry::ItemAlias>*)((char*)itemreg + 296);
 	for(auto& pair : map1) {
 		auto prefixed = add_prefix_if_necessary(pair.second.alias.str);
 		if (prefixed != pair.first.str) {
@@ -263,7 +266,8 @@ static void generate_item_alias_mapping() {
 	}
 
 	auto complex = nlohmann::json::object();
-	auto& map2 = *(std::unordered_map<HashedString, std::function<HashedString(short)>>*)dlsym("?mComplexAliasLookupMap@ItemRegistry@@0V?$unordered_map@VHashedString@@V?$function@$$A6A?AVHashedString@@F@Z@std@@U?$hash@VHashedString@@@3@U?$equal_to@VHashedString@@@3@V?$allocator@U?$pair@$$CBVHashedString@@V?$function@$$A6A?AVHashedString@@F@Z@std@@@std@@@3@@std@@A");
+	//ItemRegistry::registerComplexAlias
+	auto& map2 = *(std::unordered_map<HashedString, std::function<HashedString(short)>>*)((char*)itemreg + 488);
 	for(auto& pair : map2) {
 		auto metaMap = nlohmann::json::object();
 		auto func = pair.second;
@@ -299,11 +303,9 @@ static void generate_block_id_to_item_id_map(Minecraft* mc) {
 
 	for (unsigned int i = 0; i < numStates; i++) {
 		auto& state = palette.getBlock(i);
-		auto descriptor = new ItemDescriptor(state);
-
-		const Item *item = descriptor->getItem();
-		delete descriptor;
-		if (item == nullptr) {
+		auto itemreg = mc->getLevel()->getItemRegistry()._lockRegistry();
+		auto item = itemreg->getItem(state.getLegacyBlock().getBlockItemId());
+		if (item.get() == nullptr) {
 			std::cout << "null item ??? " << state.getLegacyBlock().getFullName() << std::endl;
 			continue;
 		}
@@ -346,9 +348,11 @@ static void generate_command_arg_types_table(Minecraft* mc) {
 	std::cout << "Generated command parameter ID mapping table" << std::endl;
 }
 
-static void generate_item_tags() {
+static void generate_item_tags(Minecraft* mc) {
+	auto itemreg = mc->getLevel()->getItemRegistry()._lockRegistry();
 	auto tags = nlohmann::json::object();
-	auto& map= *(std::unordered_map<ItemTag, std::unordered_set<Item const*>>*)dlsym("?mTagToItemsMap@ItemRegistry@@0V?$unordered_map@UItemTag@@V?$unordered_set@PEBVItem@@U?$hash@PEBVItem@@@std@@U?$equal_to@PEBVItem@@@3@V?$allocator@PEBVItem@@@3@@std@@U?$hash@UItemTag@@@3@U?$equal_to@UItemTag@@@3@V?$allocator@U?$pair@$$CBUItemTag@@V?$unordered_set@PEBVItem@@U?$hash@PEBVItem@@@std@@U?$equal_to@PEBVItem@@@3@V?$allocator@PEBVItem@@@3@@std@@@std@@@3@@std@@A");
+	
+	auto& map = *(std::unordered_map<ItemTag, std::unordered_set<Item const*>>*)((char*)itemreg.get() + 648);//ida ItemRegistry::lookupByTag
 
 	for (const auto &pair: map) {
 		auto items = nlohmann::json::array();
@@ -380,8 +384,8 @@ void modloader_on_server_start(Minecraft *mc) {
 
 	generate_old_to_current_palette_map(mc);
 
-	generate_item_alias_mapping();
-	generate_item_tags();
+	generate_item_alias_mapping(mc);
+	generate_item_tags(mc);
 
 	generate_block_id_to_item_id_map(mc);
 	generate_command_arg_types_table(mc);
