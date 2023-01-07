@@ -22,6 +22,7 @@
 #include <iomanip>
 #include <iostream>
 #include <json.hpp>
+using namespace std;
 
 
 void generate_r12_to_current_block_map(Minecraft* mc) {
@@ -67,7 +68,7 @@ void generate_r12_to_current_block_map(Minecraft* mc) {
 		}
 	}
 
-	std::ofstream output("mapping_files/r12_to_current_block_map.bin");
+	std::ofstream output("mapping_files/r12_to_current_block_map.bin", ios::binary);
 	output << *stream->mBuffer;
 	output.close();
 	delete stream;
@@ -99,7 +100,7 @@ static void generate_old_to_current_palette_map(Minecraft* mc) {
 		}
 		std::ifstream infile(file.path());
 		auto versionName = file.path().stem().string();
-		std::ofstream mapping_file("mapping_files/old_palette_mappings/" + versionName + "_to_current_block_map.bin");
+		std::ofstream mapping_file("mapping_files/old_palette_mappings/" + versionName + "_to_current_block_map.bin", ios::binary);
 
 		auto input = new ReadOnlyBinaryStream(slurp(infile));
 		auto output = new BinaryStream();
@@ -140,7 +141,8 @@ void generate_palette(Minecraft* mc) {
 		wp.writeCompoundTag(state.tag);
 	}
 
-	std::ofstream paletteOutput("mapping_files/canonical_block_states.nbt");
+	std::ofstream paletteOutput("mapping_files/canonical_block_states.nbt", ios::binary);
+		
 	paletteOutput << *wp.mBuffer;
 	paletteOutput.close();
 	std::cout << "Generated block palette" << std::endl;

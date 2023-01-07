@@ -4,10 +4,17 @@
 #include <string>
 #include <memory>
 #include "Tag.h"
+#include <map>
+
+class CompoundTagVariant {
+
+	char filler[0x30]; // IDA CompoundTagVariant::emplace
+};
 
 class CompoundTag : public Tag{
 public:
-	char filler[48];
+	std::map<std::string, CompoundTagVariant> val;
+	
 	static std::unique_ptr<CompoundTag> create() {
 		return std::unique_ptr<CompoundTag>((CompoundTag*)Tag::newTag(Tag::Type::Compound).release());
 	}
@@ -21,5 +28,16 @@ public:
 
 	MCAPI std::unique_ptr<class CompoundTag> clone() const;
 
-	virtual ~CompoundTag(void);
+	MCAPI unsigned __int64 size() const;
+
+	virtual ~CompoundTag();
+	virtual void write(class IDataOutput&) const;
+	virtual void load(class IDataInput&);
+	virtual std::string toString() const;
+	virtual enum Tag::Type getId() const;
+	virtual bool equals(class Tag const&) const;
+	virtual void print(std::string const&, class PrintStream&) const;
+	virtual std::unique_ptr<class Tag> copy() const;
+	virtual unsigned __int64 hash() const;
+
 };
